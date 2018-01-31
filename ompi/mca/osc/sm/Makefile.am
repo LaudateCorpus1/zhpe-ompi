@@ -1,6 +1,7 @@
 #
 # Copyright (c) 2011      Sandia National Laboratories.  All rights reserved.
 # Copyright (c) 2017      IBM Corporation.  All rights reserved.
+# Copyright (c) 2017-2018 Hewlett Packard Enterprise Development LP.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -16,6 +17,8 @@ sm_sources = \
 	osc_sm_component.c \
 	osc_sm_active_target.c \
 	osc_sm_passive_target.c
+
+osc_sm_LIBS = -lpmem
 
 AM_CPPFLAGS = $(osc_sm_CPPFLAGS)
 

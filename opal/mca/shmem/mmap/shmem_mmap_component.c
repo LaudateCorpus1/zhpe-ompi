@@ -14,6 +14,7 @@
  * Copyright (c) 2010-2015 Los Alamos National Security, LLC. All rights
  *                         reserved.
  * Copyright (c) 2016      Intel, Inc. All rights reserved.
+ * Copyright (c) 2017-2018 Hewlett Packard Enterprise Development LP.  All rights reserved.
  * $COPYRIGHT$
  *
  * Additional copyrights may follow
@@ -134,7 +135,7 @@ mmap_register(void)
         return ret;
     }
 
-    opal_shmem_mmap_relocate_backing_file = 0;
+    opal_shmem_mmap_relocate_backing_file = 1;
     ret = mca_base_component_var_register (&mca_shmem_mmap_component.super.base_version,
                                            "relocate_backing_file",
                                            "Whether to change the default placement of backing files or not "
@@ -150,7 +151,7 @@ mmap_register(void)
         return ret;
     }
 
-    opal_shmem_mmap_backing_file_base_dir = "/dev/shm";
+    opal_shmem_mmap_backing_file_base_dir = "/lfs";
     ret = mca_base_component_var_register (&mca_shmem_mmap_component.super.base_version,
                                            "backing_file_base_dir",
                                            "Specifies where backing files will be created when "

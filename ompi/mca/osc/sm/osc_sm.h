@@ -5,6 +5,7 @@
  *                         reserved.
  * Copyright (c) 2015-2017 Research Organization for Information Science
  *                         and Technology (RIST). All rights reserved.
+ * Copyright (c) 2017-2018 Hewlett Packard Enterprise Development LP.  All rights reserved.
  * $COPYRIGHT$
  *
  * Additional copyrights may follow
@@ -16,6 +17,28 @@
 #define OSC_SM_SM_H
 
 #include "opal/mca/shmem/base/base.h"
+#include <libpmem.h>
+#include <pthread.h>
+
+#define CACHELINE_SZ (64UL)
+
+#ifdef __aarch64__
+
+static inline void smp_wmb(void)
+{
+    asm volatile("dsb st":::"memory");
+}
+
+#endif
+
+#ifdef __x86_64__
+
+static inline void smp_wmb(void)
+{
+    asm volatile("sfence":::"memory");
+}
+
+#endif
 
 /* data shared across all peers */
 struct ompi_osc_sm_global_state_t {
@@ -26,16 +49,48 @@ struct ompi_osc_sm_global_state_t {
 
     int sense;
     int32_t count;
-};
+} __attribute__((aligned(CACHELINE_SZ)));
 typedef struct ompi_osc_sm_global_state_t ompi_osc_sm_global_state_t;
 
+enum fsm_atomic_op_t {
+    fetch_add,
+    add,
+    fetch
+};
+typedef enum fsm_atomic_op_t fsm_atomic_op_t;
+
+typedef uint64_t __attribute__((aligned(CACHELINE_SZ))) aligned_uint64_t;
+/*support software atomic operation*/
+struct ompi_osc_fsm_atomic_t {
+    struct {
+        uint64_t request; // (request > ack) indicates outstanding request
+        int target;
+        fsm_atomic_op_t op;
+        uint32_t param;
+    }__attribute__((aligned(CACHELINE_SZ)));
+    struct {
+        uint64_t ack;
+        uint32_t result;
+    }__attribute__((aligned(CACHELINE_SZ)));
+};
+typedef struct ompi_osc_fsm_atomic_t ompi_osc_fsm_atomic_t;
+
 /* this is data exposed to remote nodes */
+//todo potential problem, check cache line
 struct ompi_osc_sm_lock_t {
+    ompi_osc_fsm_atomic_t counter_ac;
+    ompi_osc_fsm_atomic_t counter2_ac;
+    ompi_osc_fsm_atomic_t accumulate_ac;
+    ompi_osc_fsm_atomic_t write_ac;
+    ompi_osc_fsm_atomic_t read_ac;
     uint32_t counter;
+    uint32_t counter2;
+    uint32_t accumulate;
     uint32_t write;
     uint32_t read;
 };
 typedef struct ompi_osc_sm_lock_t ompi_osc_sm_lock_t;
+
 
 struct ompi_osc_sm_node_state_t {
     int32_t complete_count;
@@ -121,6 +176,16 @@ int ompi_osc_sm_accumulate(const void *origin_addr,
                                  struct ompi_op_t *op,
                                  struct ompi_win_t *win);
 
+int ompi_osc_fsm_accumulate(const void *origin_addr,
+                                 int origin_count,
+                                 struct ompi_datatype_t *origin_dt,
+                                 int target,
+                                 ptrdiff_t target_disp,
+                                 int target_count,
+                                 struct ompi_datatype_t *target_dt,
+                                 struct ompi_op_t *op,
+                                 struct ompi_win_t *win);
+
 int ompi_osc_sm_compare_and_swap(const void *origin_addr,
                                        const void *compare_addr,
                                        void *result_addr,
@@ -196,6 +261,8 @@ int ompi_osc_sm_rget_accumulate(const void *origin_addr,
                                       struct ompi_request_t **request);
 
 int ompi_osc_sm_fence(int assert, struct ompi_win_t *win);
+
+int ompi_osc_fsm_fence(int assert, struct ompi_win_t *win);
 
 int ompi_osc_sm_start(struct ompi_group_t *group,
                             int assert,
