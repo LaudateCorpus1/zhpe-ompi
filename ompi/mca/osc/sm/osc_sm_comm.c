@@ -5,6 +5,7 @@
  *                         reserved.
  * Copyright (c) 2015-2017 Research Organization for Information Science
  *                         and Technology (RIST). All rights reserved.
+ * Copyright (c) 2017-2018 Hewlett Packard Enterprise Development LP.  All rights reserved.
  * $COPYRIGHT$
  *
  * Additional copyrights may follow

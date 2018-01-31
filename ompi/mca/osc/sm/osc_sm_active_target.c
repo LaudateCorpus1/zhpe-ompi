@@ -6,6 +6,7 @@
  * Copyright (c) 2014-2017 The University of Tennessee and The University
  *                         of Tennessee Research Foundation.  All rights
  *                         reserved.
+ * Copyright (c) 2017-2018 Hewlett Packard Enterprise Development LP.  All rights reserved.
  * $COPYRIGHT$
  *
  * Additional copyrights may follow
@@ -21,6 +22,8 @@
 #include "ompi/mca/osc/base/osc_base_obj_convert.h"
 
 #include "osc_sm.h"
+
+#include <libpmem.h>
 
 /**
  * compare_ranks:
@@ -90,6 +93,39 @@ static int *ompi_osc_sm_group_ranks (ompi_group_t *group, ompi_group_t *sub_grou
     return ranks2;
 }
 
+
+int
+ompi_osc_fsm_fence(int assert, struct ompi_win_t *win)
+{
+    ompi_osc_sm_module_t *module =
+        (ompi_osc_sm_module_t*) win->w_osc_module;
+
+    /* ensure all memory operations have completed */
+    opal_atomic_mb();
+
+    int comm_size = ompi_comm_size(module->comm);
+    int i;
+
+    /* To be conservative, we flush all data.
+       If we tracked which buffers are actually dirty, we could avoid
+       unnecessary flushes .*/
+    for (i = 0; i < comm_size; i++) {
+        if (module->bases[i]) {
+             pmem_persist(module->bases[i], module->sizes[i]);
+        }
+    }
+
+    int res = module->comm->c_coll->coll_barrier(module->comm,
+                                           module->comm->c_coll->coll_barrier_module);
+
+    /* We need to invalidate everything so we can see changes made on other nodes. */
+    for (i = 0; i < comm_size; i++) {
+        if (module->bases[i]) {
+	    pmem_invalidate(module->bases[i], module->sizes[i]);
+	}
+    }
+	return res;
+}
 
 int
 ompi_osc_sm_fence(int assert, struct ompi_win_t *win)
