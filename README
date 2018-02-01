@@ -29,8 +29,17 @@ Additional copyrights may follow
 $HEADER$
 
 ===========================================================================
-This branch is a proof-of-concept that enables MPI_Win_allocate_shared to work on fabric-shared memory.
+About the zhpe-fsm-poc branch
+
+This branch is a proof-of-concept that enables MPI_Win_allocate_shared
+to work on fabric-shared memory.
+
 git diff v3.0.0 for changes.
+
+Please see README-FSM.md for more information.
+
+
+===========================================================================
 
 When submitting questions and problems, be sure to include as much
 extra information as possible.  This web page details all the
