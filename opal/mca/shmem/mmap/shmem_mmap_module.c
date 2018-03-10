@@ -56,6 +56,8 @@
 #include "opal/mca/shmem/shmem.h"
 #include "opal/mca/shmem/base/base.h"
 
+#include <fam_atomic.h>
+
 #include "shmem_mmap.h"
 
 /* for tons of debug output: -mca shmem_base_verbose 70 */
@@ -423,6 +425,7 @@ segment_create(opal_shmem_ds_t *ds_buf,
     }
     /* all is well */
     else {
+
         /* -- initialize the shared memory segment -- */
         opal_atomic_rmb();
 
@@ -438,6 +441,14 @@ segment_create(opal_shmem_ds_t *ds_buf,
         ds_buf->seg_size = real_size;
         ds_buf->seg_base_addr = (unsigned char *)seg_hdrp;
         (void)strncpy(ds_buf->seg_name, real_file_name, OPAL_PATH_MAX - 1);
+
+        int ret = fam_atomic_register_region(ds_buf->seg_base_addr, ds_buf->seg_size, ds_buf->seg_id, 0);
+
+        if (ret != 0 ) {
+             fprintf(stderr,"segment_attach: fam_atomic_register_region(%s) returned %d:%s\n",ds_buf->seg_name,-ret,strerror(-ret));
+             rc = OPAL_ERROR;
+             goto out;
+         }
 
         /* set "valid" bit because setment creation was successful */
         OPAL_SHMEM_DS_SET_VALID(ds_buf);
@@ -459,6 +470,7 @@ out:
      * we are not not in an error path.
      */
     if (-1 != ds_buf->seg_id) {
+/*
         if (0 != close(ds_buf->seg_id)) {
             int err = errno;
             char hn[OPAL_MAXHOSTNAMELEN];
@@ -467,6 +479,7 @@ out:
                            "close(2)", "", strerror(err), err);
             rc = OPAL_ERROR;
          }
+*/
      }
     /* an error occured, so invalidate the shmem object and munmap if needed */
     if (OPAL_SUCCESS != rc) {
@@ -515,17 +528,19 @@ segment_attach(opal_shmem_ds_t *ds_buf)
             close(ds_buf->seg_id);
             return NULL;
         }
+
+    int ret = fam_atomic_register_region(ds_buf->seg_base_addr, ds_buf->seg_size, ds_buf->seg_id, 0);
+
+    if (ret != 0 ) {
+         fprintf(stderr,"segment_attach: fam_atomic_register_region(%s) returned %d:%s\n",ds_buf->seg_name,-ret,strerror(-ret));
+         return NULL;
+    }
+
+
         /* all is well */
         /* if close fails here, that's okay.  just let the user know and
          * continue.  if we got this far, open and mmap were successful...
          */
-        if (0 != close(ds_buf->seg_id)) {
-            int err = errno;
-            char hn[OPAL_MAXHOSTNAMELEN];
-            gethostname(hn, sizeof(hn));
-            opal_show_help("help-opal-shmem-mmap.txt", "sys call fail", 1,
-                           hn, "close(2)", "", strerror(err), err);
-        }
     }
     /* else i was the segment creator.  nothing to do here because all the hard
      * work was done in segment_create :-).
@@ -567,6 +582,9 @@ segment_detach(opal_shmem_ds_t *ds_buf)
                        "munmap(2)", "", strerror(err), err);
         rc = OPAL_ERROR;
     }
+
+    close(ds_buf->seg_id); 
+
     /* reset the contents of the opal_shmem_ds_t associated with this
      * shared memory segment.
      */

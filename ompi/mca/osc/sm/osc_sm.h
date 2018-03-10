@@ -40,6 +40,10 @@ static inline void smp_wmb(void)
 
 #endif
 
+typedef uint64_t __attribute__((aligned(CACHELINE_SZ))) aligned_uint64_t;
+
+typedef uint32_t __attribute__((aligned(CACHELINE_SZ))) aligned_uint32_t;
+
 /* data shared across all peers */
 struct ompi_osc_sm_global_state_t {
     int use_barrier_for_fence;
@@ -52,52 +56,25 @@ struct ompi_osc_sm_global_state_t {
 } __attribute__((aligned(CACHELINE_SZ)));
 typedef struct ompi_osc_sm_global_state_t ompi_osc_sm_global_state_t;
 
-enum fsm_atomic_op_t {
-    fetch_add,
-    add,
-    fetch
-};
-typedef enum fsm_atomic_op_t fsm_atomic_op_t;
-
-typedef uint64_t __attribute__((aligned(CACHELINE_SZ))) aligned_uint64_t;
-/*support software atomic operation*/
-struct ompi_osc_fsm_atomic_t {
-    struct {
-        uint64_t request; // (request > ack) indicates outstanding request
-        int target;
-        fsm_atomic_op_t op;
-        uint32_t param;
-    }__attribute__((aligned(CACHELINE_SZ)));
-    struct {
-        uint64_t ack;
-        uint32_t result;
-    }__attribute__((aligned(CACHELINE_SZ)));
-};
-typedef struct ompi_osc_fsm_atomic_t ompi_osc_fsm_atomic_t;
 
 /* this is data exposed to remote nodes */
-//todo potential problem, check cache line
 struct ompi_osc_sm_lock_t {
-    ompi_osc_fsm_atomic_t counter_ac;
-    ompi_osc_fsm_atomic_t counter2_ac;
-    ompi_osc_fsm_atomic_t accumulate_ac;
-    ompi_osc_fsm_atomic_t write_ac;
-    ompi_osc_fsm_atomic_t read_ac;
-    uint32_t counter;
-    uint32_t counter2;
-    uint32_t accumulate;
-    uint32_t write;
-    uint32_t read;
-};
+    aligned_uint64_t counter;
+    aligned_uint64_t counter2;
+    aligned_uint64_t write;
+    aligned_uint64_t read;
+    aligned_uint64_t accumulate;
+
+} __attribute__((aligned(CACHELINE_SZ)));
 typedef struct ompi_osc_sm_lock_t ompi_osc_sm_lock_t;
 
 
+/* ompi_osc_sm_node_state_t needs to be cacheline-sized */
 struct ompi_osc_sm_node_state_t {
-    int32_t complete_count;
     ompi_osc_sm_lock_t lock;
-    opal_atomic_lock_t accumulate_lock;
-};
-typedef struct ompi_osc_sm_node_state_t ompi_osc_sm_node_state_t;
+    int64_t complete_count;
+} __attribute__((aligned(CACHELINE_SZ)));
+typedef struct ompi_osc_sm_node_state_t ompi_osc_sm_node_state_t __attribute__((aligned(CACHELINE_SZ)));
 
 struct ompi_osc_sm_component_t {
     ompi_osc_base_component_t super;
@@ -134,7 +111,7 @@ struct ompi_osc_sm_module_t {
     /* exposed data */
     ompi_osc_sm_global_state_t *global_state;
     ompi_osc_sm_node_state_t *my_node_state;
-    ompi_osc_sm_node_state_t *node_states;
+    ompi_osc_sm_node_state_t *node_states; 
     uint64_t **posts;
 
     opal_mutex_t lock;
@@ -186,7 +163,7 @@ int ompi_osc_fsm_accumulate(const void *origin_addr,
                                  struct ompi_op_t *op,
                                  struct ompi_win_t *win);
 
-int ompi_osc_sm_compare_and_swap(const void *origin_addr,
+int ompi_osc_fsm_compare_and_swap(const void *origin_addr,
                                        const void *compare_addr,
                                        void *result_addr,
                                        struct ompi_datatype_t *dt,
@@ -194,7 +171,7 @@ int ompi_osc_sm_compare_and_swap(const void *origin_addr,
                                        ptrdiff_t target_disp,
                                        struct ompi_win_t *win);
 
-int ompi_osc_sm_fetch_and_op(const void *origin_addr,
+int ompi_osc_fsm_fetch_and_op(const void *origin_addr,
                                    void *result_addr,
                                    struct ompi_datatype_t *dt,
                                    int target,
@@ -202,7 +179,7 @@ int ompi_osc_sm_fetch_and_op(const void *origin_addr,
                                    struct ompi_op_t *op,
                                    struct ompi_win_t *win);
 
-int ompi_osc_sm_get_accumulate(const void *origin_addr,
+int ompi_osc_fsm_get_accumulate(const void *origin_addr,
                                      int origin_count,
                                      struct ompi_datatype_t *origin_datatype,
                                      void *result_addr,
@@ -235,7 +212,7 @@ int ompi_osc_sm_rget(void *origin_addr,
                            struct ompi_win_t *win,
                            struct ompi_request_t **request);
 
-int ompi_osc_sm_raccumulate(const void *origin_addr,
+int ompi_osc_fsm_raccumulate(const void *origin_addr,
                                   int origin_count,
                                   struct ompi_datatype_t *origin_dt,
                                   int target,
@@ -246,7 +223,7 @@ int ompi_osc_sm_raccumulate(const void *origin_addr,
                                   struct ompi_win_t *win,
                                   struct ompi_request_t **request);
 
-int ompi_osc_sm_rget_accumulate(const void *origin_addr,
+int ompi_osc_fsm_rget_accumulate(const void *origin_addr,
                                       int origin_count,
                                       struct ompi_datatype_t *origin_datatype,
                                       void *result_addr,

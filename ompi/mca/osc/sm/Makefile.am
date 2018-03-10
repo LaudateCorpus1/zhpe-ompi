@@ -18,7 +18,7 @@ sm_sources = \
 	osc_sm_active_target.c \
 	osc_sm_passive_target.c
 
-osc_sm_LIBS = -lpmem
+osc_sm_LIBS = -lfam_atomic -lpmem
 
 AM_CPPFLAGS = $(osc_sm_CPPFLAGS)
 
