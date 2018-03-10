@@ -43,6 +43,7 @@ static int component_select(struct ompi_win_t *win, void **base, size_t size, in
                             struct ompi_communicator_t *comm, struct ompi_info_t *info,
                             int flavor, int *model);
 
+
 ompi_osc_sm_component_t mca_osc_sm_component = {
     { /* ompi_osc_base_component_t */
         .osc_version = {
@@ -324,8 +325,6 @@ component_select(struct ompi_win_t *win, void **base, size_t size, int disp_unit
             }
         }
 
-/* KLUDGE   module->comm->c_coll->coll_barrier(module->comm, module->comm->c_coll->coll_barrier_module); */
-
         module->sizes = malloc(sizeof(size_t) * comm_size);
         if (NULL == module->sizes) return OMPI_ERR_TEMP_OUT_OF_RESOURCE;
         module->bases = malloc(sizeof(void*) * comm_size);
@@ -549,7 +548,6 @@ ompi_osc_sm_free(struct ompi_win_t *win)
     ompi_comm_free(&module->comm);
 
     OBJ_DESTRUCT(&module->lock);
-
 
     free(module);
 
