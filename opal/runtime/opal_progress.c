@@ -217,9 +217,11 @@ static int opal_progress_events(void)
  * care, as the cost of that happening is far outweighed by the cost
  * of the if checks (they were resulting in bad pipe stalling behavior)
  */
+
 void
 opal_progress(void)
 {
+    zhpe_stats_start(zhpe_stats_subid(MPI, 0));
     static uint32_t num_calls = 0;
     size_t i;
     int events = 0;
@@ -255,6 +257,8 @@ opal_progress(void)
         sched_yield();
     }
 #endif  /* defined(HAVE_SCHED_YIELD) */
+
+    zhpe_stats_stop(zhpe_stats_subid(MPI, 0));
 }
 
 

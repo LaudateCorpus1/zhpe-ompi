@@ -55,6 +55,7 @@ int ompi_mtl_ofi_progress_no_inline(void);
 __opal_attribute_always_inline__ static inline int
 ompi_mtl_ofi_progress(void)
 {
+    zhpe_stats_start(zhpe_stats_subid(MPI, 100));
     ssize_t ret;
     int count = 0, i, events_read;
     struct fi_cq_err_entry error = { 0 };
@@ -124,6 +125,10 @@ ompi_mtl_ofi_progress(void)
             }
         }
     }
+    if (count > 0)
+	    zhpe_stats_stamp(zhpe_stats_subid(MPI, 110), count);
+    zhpe_stats_stop(zhpe_stats_subid(MPI, 100));
+
     return count;
 }
 

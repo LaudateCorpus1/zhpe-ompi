@@ -33,6 +33,14 @@ BEGIN_C_DECLS
 #include "opal_config.h"
 #include "opal/threads/mutex.h"
 
+#ifdef HAVE_ZHPE_STATS
+#include <zhpe_stats.h>
+#else
+#define zhpe_stats_start(_subid)        do {} while (0)
+#define zhpe_stats_stop(_subid)         do {} while (0)
+#define zhpe_stats_stamp(_subid, ...)   do {} while (0)
+#endif
+
 /**
  * Initialize the progress engine
  *
