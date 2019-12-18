@@ -71,11 +71,6 @@ int MPI_Win_allocate_shared(MPI_Aint size, int disp_unit, MPI_Info info,
         }
     }
 
-    /* communicator must be an intracommunicator */
-    if (OMPI_COMM_IS_INTER(comm)) {
-        return OMPI_ERRHANDLER_INVOKE(comm, MPI_ERR_COMM, FUNC_NAME);
-    }
-
     OPAL_CR_ENTER_LIBRARY();
 
     /* create window and return */

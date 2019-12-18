@@ -6,6 +6,8 @@
  * Copyright (c) 2015-2016 Los Alamos National Security, LLC.  All rights
  *                         reserved.
  * Copyright (c) 2018      Amazon.com, Inc. or its affiliates.  All Rights reserved.
+ * Copyright (c) 2018      Hewlett Packard Enterprise Development LP. All
+ *                         rights reserved.
  * $COPYRIGHT$
  *
  * Additional copyrights may follow
@@ -16,6 +18,7 @@
 #include "mtl_ofi.h"
 #include "opal/util/argv.h"
 #include "opal/util/printf.h"
+#include "opal/mca/common/ofi/common_ofi.h"
 
 static int ompi_mtl_ofi_component_open(void);
 static int ompi_mtl_ofi_component_query(mca_base_module_t **module, int *priority);
@@ -33,6 +36,7 @@ static int control_progress;
 static int data_progress;
 static int av_type;
 static int ofi_tag_mode;
+static bool rma_enable;
 
 #if OPAL_HAVE_THREAD_LOCAL
     opal_thread_local int per_thread_ctx;
@@ -159,6 +163,15 @@ ompi_mtl_ofi_component_register(void)
                                     &ompi_mtl_ofi.ofi_progress_event_count);
 
     free(desc);
+
+    rma_enable = false;
+    mca_base_component_var_register(&mca_mtl_ofi_component.super.mtl_version,
+                                    "rma_enable",
+                                    "Flag to enable RMA operations on the ofi endpoint and to set FI_MR_BASIC equivalent behavior in the provider hints.  Default is 0 (disabled); set to nonzero to enable.",
+                                    MCA_BASE_VAR_TYPE_BOOL, NULL, 0, 0,
+                                    OPAL_INFO_LVL_9,
+                                    MCA_BASE_VAR_SCOPE_READONLY,
+                                    &rma_enable);
 
     ret = mca_base_var_enum_create ("ofi_tag_mode_type", ofi_tag_mode_type , &new_enum);
     if (OPAL_SUCCESS != ret) {
@@ -640,6 +653,9 @@ ompi_mtl_ofi_component_init(bool enable_progress_threads,
      *           Tag matching is specified to implement MPI semantics.
      * msg_order: Guarantee that messages with same tag are ordered.
      */
+
+    mca_common_ofi_register_mca_variables();
+
     hints = fi_allocinfo();
     if (!hints) {
         opal_output_verbose(1, ompi_mtl_base_framework.framework_output,
@@ -692,6 +708,11 @@ ompi_mtl_ofi_component_init(bool enable_progress_threads,
     }
 
     hints->domain_attr->resource_mgmt    = FI_RM_ENABLED;
+
+    if (rma_enable) {
+        hints->caps |= FI_RMA;      /* Enable RMA operations */
+        hints->domain_attr->mr_mode = FI_MR_BASIC;  /* Memory model */
+    }
 
     /**
      * FI_VERSION provides binary backward and forward compatibility support
@@ -1002,6 +1023,12 @@ ompi_mtl_ofi_component_init(bool enable_progress_threads,
      * Set the ANY_SRC address.
      */
     ompi_mtl_ofi.any_addr = FI_ADDR_UNSPEC;
+
+    mca_common_ofi_set_ofi_info(prov,
+                                ompi_mtl_ofi.fabric,
+                                ompi_mtl_ofi.domain,
+                                ompi_mtl_ofi.av,
+                                ompi_mtl_ofi.sep);
 
     return &ompi_mtl_ofi.base;
 
