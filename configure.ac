@@ -70,12 +70,13 @@ OPAL_LOAD_PLATFORM
 # Start it up
 #
 
+OPAL_CONFIGURE_SETUP
+opal_show_title "Configuring project_name_long"
+opal_show_subtitle "Prerequisites"
+
 AC_CHECK_PROG([PERL],[perl],[perl],[no])
 AS_IF([test "X$PERL" = "Xno"],
       [AC_MSG_ERROR(["Open MPI requires perl. Aborting"])])
-
-OPAL_CONFIGURE_SETUP
-opal_show_title "Configuring project_name_long"
 
 #
 # Setup some things that must be done before AM-INIT-AUTOMAKE
@@ -976,10 +977,16 @@ if test -z "$LEX" || \
         AC_MSG_WARN([*** Could not find Flex on your system.])
         AC_MSG_WARN([*** Flex is required for developer builds of Open MPI.])
         AC_MSG_WARN([*** Other versions of Lex are not supported.])
-        AC_MSG_WARN([*** YOU DO NOT NEED FLEX WHEN BUILDING DISTRIBUTION TARBALLS!])
+        AC_MSG_WARN([*** NOTE: If you are building a tarball downloaded from www.open-mpi.org, you do not need Flex])
         AC_MSG_ERROR([Cannot continue])
     fi
 fi
+
+#
+# Setup man page processing
+#
+
+OPAL_SETUP_MAN_PAGES
 
 #
 # File system case sensitivity
@@ -1200,7 +1207,7 @@ fi
 # if we have a C++ compiler.
 AS_IF([test "$OMPI_TRY_FORTRAN_BINDINGS" = "$OMPI_FORTRAN_NO_BINDINGS"],[F77=no FC=no])
 
-LT_INIT([dlopen win32-dll])
+LT_INIT
 
 # What's the suffix of shared libraries?  Inspired by generated
 # Libtool code (even though we don't support several of these
@@ -1236,7 +1243,7 @@ esac
 AC_SUBST(OPAL_DYN_LIB_PREFIX)
 AC_SUBST(OPAL_DYN_LIB_SUFFIX)
 
-# Need the libtool binary before the rpathify stuff
+# Need the libtool executable before the rpathify stuff
 LT_OUTPUT
 
 ##################################

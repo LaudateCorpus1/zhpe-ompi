@@ -464,6 +464,7 @@ test/simple/hello_output
 test/simple/hello_show_help
 test/simple/hello
 test/simple/hello++
+test/simple/intercomm1
 test/simple/interlib
 test/simple/loop_child
 test/simple/loop_spawn
@@ -673,3 +674,4 @@ test/util/bipartite_graph
 
 opal/test/reachable/reachable_netlink
 opal/test/reachable/reachable_weighted
+opal/mca/threads/argobots/threads_argobots.h

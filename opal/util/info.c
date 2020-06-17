@@ -14,10 +14,10 @@
  * Copyright (c) 2009      Sun Microsystems, Inc.  All rights reserved.
  * Copyright (c) 2012-2017 Los Alamos National Security, LLC. All rights
  *                         reserved.
- * Copyright (c) 2015-2017 Research Organization for Information Science
- *                         and Technology (RIST). All rights reserved.
+ * Copyright (c) 2015-2020 Research Organization for Information Science
+ *                         and Technology (RIST).  All rights reserved.
  * Copyright (c) 2016-2018 IBM Corporation. All rights reserved.
- * Copyright (c) 2017      Intel, Inc. All rights reserved.
+ * Copyright (c) 2017-2020 Intel, Inc.  All rights reserved.
  * $COPYRIGHT$
  *
  * Additional copyrights may follow
@@ -338,7 +338,7 @@ int opal_info_get_value_enum (opal_info_t *info, const char *key, int *value,
  * Similar to opal_info_get(), but cast the result into a boolean
  * using some well-defined rules.
  */
-int opal_info_get_bool(opal_info_t *info, char *key, bool *value, int *flag)
+int opal_info_get_bool(opal_info_t *info, const char *key, bool *value, int *flag)
 {
     char str[256];
 
@@ -359,13 +359,13 @@ opal_str_to_bool(char *str)
     char *ptr;
 
     /* Trim whitespace */
-    ptr = str + sizeof(str) - 1;
+    ptr = str + strlen(str) - 1;
     while (ptr >= str && isspace(*ptr)) {
         *ptr = '\0';
         --ptr;
     }
     ptr = str;
-    while (ptr < str + sizeof(str) - 1 && *ptr != '\0' &&
+    while (ptr < str + strlen(str) - 1 && *ptr != '\0' &&
            isspace(*ptr)) {
         ++ptr;
     }

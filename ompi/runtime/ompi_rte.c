@@ -561,7 +561,6 @@ int ompi_rte_init(int *pargc, char ***pargv)
         }
         opal_process_info.nodename = ev1;  // ev1 is an allocated string
     }
-    opal_process_info.nodename = opal_process_info.nodename;
 
     /* get our local rank from PMIx */
     OPAL_MODEX_RECV_VALUE_OPTIONAL(rc, PMIX_LOCAL_RANK,
@@ -754,28 +753,6 @@ int ompi_rte_init(int *pargc, char ***pargv)
     } else {
         opal_process_info.cpuset = NULL;
         opal_process_info.proc_is_bound = false;
-    }
-
-    /* get our numa rank from PMIx */
-    if (opal_process_info.proc_is_bound) {
-        OPAL_MODEX_RECV_VALUE_OPTIONAL(rc, PMIX_NUMA_RANK,
-                                       &opal_process_info.my_name, &u16ptr, PMIX_UINT16);
-        if (PMIX_SUCCESS != rc) {
-            if (ompi_singleton) {
-                /* just assume the numa_rank is invalid, set to UINT16_MAX */
-                u16 = UINT16_MAX;
-            } else {
-                ret = opal_pmix_convert_status(rc);
-                error = "numa rank";
-                goto error;
-            }
-        }
-        opal_process_info.my_numa_rank = u16;
-    } else {
-        /* If processes are not bound, the numa_rank is not available
-         * Assign UINT16_MAX to the numa_rank to indicate an invalid value
-         */
-        opal_process_info.my_numa_rank = UINT16_MAX;
     }
 
     /* get our local peers */

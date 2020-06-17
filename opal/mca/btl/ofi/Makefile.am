@@ -13,6 +13,8 @@
 # Copyright (c) 2013      NVIDIA Corporation.  All rights reserved.
 # Copyright (c) 2017      IBM Corporation.  All rights reserved.
 # Copyright (c) 2018      Intel, inc. All rights reserved
+# Copyright (c) 2020      Triad National Security, LLC. All rights
+#                         reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -58,6 +60,7 @@ mca_btl_ofi_la_SOURCES = $(component_sources)
 mca_btl_ofi_la_LDFLAGS = -module -avoid-version \
                          $(opal_ofi_LDFLAGS)
 mca_btl_ofi_la_LIBADD = $(top_builddir)/opal/lib@OPAL_LIB_PREFIX@open-pal.la \
+    $(OPAL_TOP_BUILDDIR)/opal/mca/common/ofi/lib@OPAL_LIB_PREFIX@mca_common_ofi.la \
     $(opal_ofi_LIBS)
 
 noinst_LTLIBRARIES = $(lib)
